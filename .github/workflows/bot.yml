@@ -1,0 +1,49 @@
+name: Danskerdong bot
+
+on:
+  schedule:
+    - cron: "*/3 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: danskerdong-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
+        run: python main.py
+
+      - name: Commit opdateret state
+        run: |
+          git config user.name "danskerdong-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add state.json
+          if git diff --staged --quiet; then
+            echo "Ingen state-ændringer — springer commit over."
+          else
+            git commit -m "chore: opdater bot state [skip ci]"
+            git push
+          fi
