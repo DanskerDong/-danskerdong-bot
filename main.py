@@ -170,7 +170,11 @@ def fotmob_get(path: str, params: dict | None = None) -> Any | None:
 def fetch_todays_matches() -> list[dict]:
     """Returnerer liste af live/afsluttede kampe i dag uden for danske ligaer."""
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    data = fotmob_get("/matches", params={"date": today})
+    data = fotmob_get("/data/matches", params={
+        "date": today,
+        "timezone": "Europe/Copenhagen",
+        "includeNextDayLateNight": "true",
+    })
     if not data:
         return []
 
