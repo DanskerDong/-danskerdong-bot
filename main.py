@@ -202,7 +202,7 @@ def fetch_todays_matches() -> list[dict]:
 
 
 def fetch_match_details(match_id: str | int) -> dict | None:
-    return fotmob_get("/matchDetails", params={"matchId": match_id})
+    return fotmob_get("/data/matchDetails", params={"matchId": match_id})
 
 
 # ---------------------------------------------------------------------------
