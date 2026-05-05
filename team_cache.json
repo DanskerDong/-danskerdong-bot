@@ -1,1 +1,464 @@
-{}
+{
+  "Kasper Schmeichel": {
+    "team_id": 554,
+    "team_name": "Anderlecht",
+    "league_id": 144,
+    "league_name": "Jupiler Pro League",
+    "country": "Belgium",
+    "season": 2024,
+    "status": "active",
+    "miss_count": 0,
+    "last_found": "2026-05-05T20:21:54.536870+00:00",
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00"
+  },
+  "Frederik Rønnow": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mads Hermansen": {
+    "team_id": 46,
+    "team_name": "Leicester",
+    "league_id": 39,
+    "league_name": "Premier League",
+    "country": "England",
+    "season": 2024,
+    "status": "active",
+    "miss_count": 0,
+    "last_found": "2026-05-05T20:21:54.536870+00:00",
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00"
+  },
+  "Peter Vindahl": {
+    "team_id": 201,
+    "team_name": "AZ Alkmaar",
+    "league_id": 88,
+    "league_name": "Eredivisie",
+    "country": "Netherlands",
+    "season": 2024,
+    "status": "active",
+    "miss_count": 0,
+    "last_found": "2026-05-05T20:21:54.536870+00:00",
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00"
+  },
+  "Joachim Andersen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Andreas Christensen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Victor Nelsson": {
+    "team_id": 497,
+    "team_name": "AS Roma",
+    "league_id": 3,
+    "league_name": "UEFA Europa League",
+    "country": "World",
+    "season": 2024,
+    "status": "active",
+    "miss_count": 0,
+    "last_found": "2026-05-05T20:21:54.536870+00:00",
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00"
+  },
+  "Jannik Vestergaard": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Rasmus Nissen Kristensen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Joakim Mæhle": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Alexander Bah": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mads Roerslev": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Nicolai Boilesen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Kristoffer Ajer": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Henrik Dalsgaard": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Oliver Sonne": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Patrick Dorgu": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Christian Eriksen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Pierre-Emile Højbjerg": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mathias Jensen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Morten Hjulmand": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Christian Nørgaard": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Morten Frendrup": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mikkel Damsgaard": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Jesper Lindstrøm": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Andreas Skov Olsen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Robert Skov": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mads Bidstrup": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Victor Kristiansen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Matt O'Riley": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Victor Torp": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Jacob Bruun Larsen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Jeppe Tverskov": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Magnus Kofod Andersen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Rasmus Højlund": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Yussuf Poulsen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mohamed Daramy": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Kasper Dolberg": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Jonas Wind": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Martin Braithwaite": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Jens Odgaard": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Marcus Ingvartsen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Philip Zinckernagel": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Pelle Mattsson": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Mikkel Kaufmann": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Anders Dreyer": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "William Osula": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Gustav Isaksen": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Albert Grønbæk": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  },
+  "Conrad Harder": {
+    "team_id": null,
+    "team_name": null,
+    "league_id": null,
+    "league_name": null,
+    "miss_count": 1,
+    "last_attempt": "2026-05-05T20:21:54.536870+00:00",
+    "status": "missing"
+  }
+}
