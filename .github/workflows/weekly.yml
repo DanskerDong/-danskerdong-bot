@@ -1,0 +1,42 @@
+name: Weekly player team update
+ 
+on:
+  schedule:
+    # Kør søndag 01:00 UTC = 03:00 sommertid / 02:00 vintertid (DK)
+    - cron: '0 1 * * 0'
+  workflow_dispatch:
+ 
+permissions:
+  contents: write
+ 
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: danskerdong-state
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+ 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+ 
+      - name: Update team cache
+        run: python weekly_update.py
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+ 
+      - name: Commit cache
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash
+          git add team_cache.json
+          git diff --cached --quiet || git commit -m "Update team cache [skip ci]"
+          git push || true
