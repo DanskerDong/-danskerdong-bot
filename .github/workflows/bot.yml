@@ -1,49 +1,43 @@
-name: Danskerdong bot
-
+name: DanskerDong live bot
+ 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '*/5 * * * *'
   workflow_dispatch:
-
-concurrency:
-  group: danskerdong-bot
-  cancel-in-progress: false
-
+ 
 permissions:
   contents: write
-
+ 
 jobs:
-  run:
+  run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
+    concurrency:
+      group: danskerdong-state
+      cancel-in-progress: false
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
-
+ 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: pip
-
+          python-version: '3.11'
+ 
       - name: Install dependencies
         run: pip install -r requirements.txt
-
-      - name: Run bot
+ 
+      - name: Run live bot
+        run: python main.py
         env:
           BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
-        run: python main.py
-
-      - name: Commit opdateret state
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+ 
+      - name: Commit state
         run: |
-          git config user.name "danskerdong-bot"
-          git config user.email "noreply@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash
           git add state.json
-          if git diff --staged --quiet; then
-            echo "Ingen state-ændringer — springer commit over."
-          else
-            git commit -m "chore: opdater bot state [skip ci]"
-            git push
-          fi
+          git diff --cached --quiet || git commit -m "Update state [skip ci]"
+          git push || true
