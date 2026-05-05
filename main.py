@@ -1,91 +1,70 @@
 #!/usr/bin/env python3
 """
-Danskerdong bot
----------------
-Poster mål, assists og røde kort fra danskere i udlandet til Bluesky.
-
-Kører som cron-job via GitHub Actions (se .github/workflows/bot.yml).
-
-Pipeline pr. kørsel:
-  1. Hent dagens kampe fra Fotmob.
-  2. Filtrer danske ligaer fra.
-  3. For hver live/afsluttet kamp: hent kamp-detaljer.
-  4. Find events (mål / assist / rødt kort) med en spiller fra
-     danish_players.json.
-  5. Post nye events (ikke allerede i state.json) til Bluesky.
-  6. Gem opdateret state.
-
-Data-kilde: Fotmob (uofficielt API). Hvis den pludselig stopper med at
-virke, er der beskrevet fallback i README.
+DanskerDong — live-bot (Football-Data.org)
+------------------------------------------
+Kører hver 5. min via cron-job.org → workflow_dispatch.
+Henter dagens kampe i de 12 ligaer Football-Data.org dækker, finder mål,
+assists og røde kort med dansk spiller, og poster til Bluesky.
+ 
+Spillere udenfor de 12 ligaer (Belgien, Norge, Sverige, MLS, Tyrkiet osv.)
+håndteres af daily_catchup.py én gang i døgnet.
 """
-
+ 
 from __future__ import annotations
-
+ 
 import json
 import os
 import sys
 import time
 import traceback
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
-
+ 
 import requests
-
+ 
 try:
     from atproto import Client
 except ImportError:
     print("FEJL: atproto-pakken er ikke installeret. Kør 'pip install -r requirements.txt'.")
     sys.exit(1)
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Konfiguration
 # ---------------------------------------------------------------------------
-
+ 
 ROOT = Path(__file__).parent
 PLAYERS_FILE = ROOT / "danish_players.json"
 STATE_FILE = ROOT / "state.json"
-
+ 
 BLUESKY_HANDLE = os.environ.get("BLUESKY_HANDLE", "").strip()
 BLUESKY_PASSWORD = os.environ.get("BLUESKY_PASSWORD", "").strip()
-
-# Fotmob liga-IDs vi IKKE vil poste fra (danske ligaer).
-# 46 = Superligaen, 121 = NordicBet Liga (1. division), 122 = 2. division.
-DANISH_LEAGUE_IDS = {46, 121, 122}
-
-FOTMOB_BASE = "https://www.fotmob.com/api"
-FOTMOB_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9,da;q=0.8",
-    "Referer": "https://www.fotmob.com/",
-}
-
-# Maks antal event-IDs vi gemmer i state (forhindrer ubegrænset fil-vækst).
+FD_API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY", "").strip()
+ 
+FD_BASE = "https://api.football-data.org/v4"
+ 
+# Football-Data.org gratis-tier dækker disse competitions.
+# Liste: https://www.football-data.org/coverage
+FD_COMPETITIONS = ["PL", "ELC", "PD", "BL1", "SA", "FL1", "DED", "PPL", "CL", "BSA"]
+# PL=Premier League, ELC=Championship, PD=La Liga, BL1=Bundesliga,
+# SA=Serie A, FL1=Ligue 1, DED=Eredivisie, PPL=Primeira Liga,
+# CL=Champions League, BSA=Brasilian Serie A
+ 
 MAX_STATE_EVENTS = 5000
-
-# Lille pause mellem posts for at være hyggelige ved Bluesky.
 POST_COOLDOWN_SECONDS = 2
-
-# Pause mellem Fotmob-kald.
-FOTMOB_COOLDOWN_SECONDS = 0.4
-
-
+FD_COOLDOWN_SECONDS = 6.5  # max 10 kald/min på free tier; 6.5s = 9.2 kald/min
+ 
+ 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
+ 
 def log(msg: str) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"[{ts}] {msg}", flush=True)
-
-
+ 
+ 
 _NORDIC_TRANSLATE = str.maketrans({
     "ø": "o", "Ø": "O",
     "æ": "ae", "Æ": "Ae",
@@ -94,30 +73,25 @@ _NORDIC_TRANSLATE = str.maketrans({
     "þ": "th", "Þ": "Th",
     "ł": "l", "Ł": "L",
 })
-
-
+ 
+ 
 def normalize_name(name: str | None) -> str:
-    """Lowercase + fjern accenter/diakritiske tegn + trim whitespace.
-
-    Håndterer nordiske bogstaver som ikke dekomponeres via NFKD:
-    ø → o, æ → ae, ß → ss osv. (å dekomponeres naturligt)
-    """
     if not name:
         return ""
     translated = name.translate(_NORDIC_TRANSLATE)
     nfkd = unicodedata.normalize("NFKD", translated)
     ascii_str = "".join(c for c in nfkd if not unicodedata.combining(c))
     return ascii_str.lower().strip()
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Load / save
 # ---------------------------------------------------------------------------
-
+ 
 def load_players() -> tuple[list[dict], dict[str, dict]]:
     with open(PLAYERS_FILE, encoding="utf-8") as f:
         players = json.load(f)
-
+ 
     lookup: dict[str, dict] = {}
     for p in players:
         if not p.get("active", True):
@@ -126,8 +100,8 @@ def load_players() -> tuple[list[dict], dict[str, dict]]:
         for alias in p.get("aliases", []):
             lookup[normalize_name(alias)] = p
     return players, lookup
-
-
+ 
+ 
 def load_state() -> dict:
     if not STATE_FILE.exists():
         return {"processed_events": [], "bootstrapped": False}
@@ -136,207 +110,207 @@ def load_state() -> dict:
             state = json.load(f)
     except (json.JSONDecodeError, OSError):
         return {"processed_events": [], "bootstrapped": False}
-
     state.setdefault("processed_events", [])
     state.setdefault("bootstrapped", False)
     return state
-
-
+ 
+ 
 def save_state(state: dict) -> None:
     state["processed_events"] = state["processed_events"][-MAX_STATE_EVENTS:]
     state["last_run"] = datetime.now(timezone.utc).isoformat()
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
-# Fotmob
+# Football-Data.org
 # ---------------------------------------------------------------------------
-
-def fotmob_get(path: str, params: dict | None = None) -> Any | None:
-    url = f"{FOTMOB_BASE}{path}"
+ 
+def fd_get(path: str, params: dict | None = None) -> dict | None:
+    if not FD_API_KEY:
+        log("FEJL: FOOTBALL_DATA_API_KEY mangler.")
+        return None
+    url = f"{FD_BASE}{path}"
+    headers = {"X-Auth-Token": FD_API_KEY}
     try:
-        r = requests.get(url, headers=FOTMOB_HEADERS, params=params, timeout=15)
+        r = requests.get(url, headers=headers, params=params, timeout=15)
+        if r.status_code == 429:
+            log(f"Football-Data rate-limit ramt ({path}); springer over denne kørsel.")
+            return None
         r.raise_for_status()
         return r.json()
     except requests.RequestException as e:
-        log(f"Fotmob-kald fejlede: {path} → {e}")
+        log(f"Football-Data fejl: {path} → {e}")
         return None
-    except json.JSONDecodeError as e:
-        log(f"Fotmob JSON-fejl: {path} → {e}")
-        return None
-
-
-def fetch_todays_matches() -> list[dict]:
-    """Returnerer liste af live/afsluttede kampe i dag uden for danske ligaer."""
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    data = fotmob_get("/data/matches", params={
-        "date": today,
-        "timezone": "Europe/Copenhagen",
-        "includeNextDayLateNight": "true",
-    })
+ 
+ 
+def fetch_recent_matches() -> list[dict]:
+    """
+    Returnerer kampe fra i dag og i går (for at fange sene afslutninger),
+    kun status FINISHED eller IN_PLAY/PAUSED.
+    """
+    today = datetime.now(timezone.utc).date()
+    yesterday = today - timedelta(days=1)
+    params = {
+        "dateFrom": yesterday.isoformat(),
+        "dateTo": today.isoformat(),
+    }
+    data = fd_get("/matches", params=params)
     if not data:
         return []
-
-    result = []
-    for league in data.get("leagues", []):
-        league_id = league.get("primaryId") or league.get("id")
-        if league_id in DANISH_LEAGUE_IDS:
+    matches = data.get("matches", []) or []
+    # Filtrér til kun de competitions vi vil dække
+    relevant = []
+    for m in matches:
+        comp = (m.get("competition") or {}).get("code", "")
+        if comp not in FD_COMPETITIONS:
             continue
-        league_name = league.get("name", "Ukendt liga")
-        ccode = league.get("ccode", "")
-        for match in league.get("matches", []):
-            status = match.get("status", {}) or {}
-            started = bool(status.get("started"))
-            finished = bool(status.get("finished"))
-            if not (started or finished):
-                continue
-            result.append({
-                "id": match.get("id"),
-                "league_id": league_id,
-                "league_name": league_name,
-                "country_code": ccode,
-                "finished": finished,
-            })
-    return result
-
-
-def fetch_match_details(match_id: str | int) -> dict | None:
-    return fotmob_get("/data/matchDetails", params={"matchId": match_id})
-
-
+        status = m.get("status", "")
+        if status not in ("FINISHED", "IN_PLAY", "PAUSED", "LIVE"):
+            continue
+        relevant.append(m)
+    return relevant
+ 
+ 
+def fetch_match_details(match_id: int | str) -> dict | None:
+    return fd_get(f"/matches/{match_id}")
+ 
+ 
 # ---------------------------------------------------------------------------
 # Event-udtrækning
 # ---------------------------------------------------------------------------
-
-def _find_events_list(details: dict) -> list[dict]:
-    """Fotmob's struktur skifter nogle gange; prøv flere stier."""
-    candidates = [
-        ("content", "matchFacts", "events", "events"),
-        ("content", "events", "events"),
-        ("events", "events"),
-    ]
-    for path in candidates:
-        node = details
-        for key in path:
-            if not isinstance(node, dict):
-                node = None
-                break
-            node = node.get(key)
-        if isinstance(node, list):
-            return node
-    return []
-
-
-def _team_names(details: dict) -> tuple[str, str]:
-    header = details.get("header") or {}
-    teams = header.get("teams") or []
-    if len(teams) >= 2:
-        return (teams[0].get("name", "?"), teams[1].get("name", "?"))
-    general = details.get("general") or {}
-    return (general.get("homeTeam", {}).get("name", "?"),
-            general.get("awayTeam", {}).get("name", "?"))
-
-
-def _score_str(details: dict) -> str:
-    header = details.get("header") or {}
-    status = header.get("status") or {}
-    score = status.get("scoreStr") or ""
-    return score.replace(" ", "")
-
-
-def _league_name(details: dict) -> str:
-    general = details.get("general") or {}
-    return general.get("leagueName") or "Ukendt liga"
-
-
-def extract_events(details: dict, player_lookup: dict[str, dict]) -> list[dict]:
-    """Find mål/assist/rødt kort med dansk spiller i kampen."""
-    events_out: list[dict] = []
-    if not details:
-        return events_out
-
-    match_id = (
-        (details.get("general") or {}).get("matchId")
-        or details.get("matchId")
-        or "?"
+ 
+def _score_str(match: dict) -> str:
+    score = match.get("score", {}) or {}
+    full = score.get("fullTime", {}) or {}
+    home = full.get("home")
+    away = full.get("away")
+    if home is None or away is None:
+        ht = score.get("halfTime", {}) or {}
+        home = ht.get("home", 0) or 0
+        away = ht.get("away", 0) or 0
+    return f"{home}-{away}"
+ 
+ 
+def _team_names(match: dict) -> tuple[str, str, int | None, int | None]:
+    home = match.get("homeTeam") or {}
+    away = match.get("awayTeam") or {}
+    return (
+        home.get("shortName") or home.get("name") or "?",
+        away.get("shortName") or away.get("name") or "?",
+        home.get("id"),
+        away.get("id"),
     )
-    home, away = _team_names(details)
-    league_name = _league_name(details)
-    score = _score_str(details)
-
-    for ev in _find_events_list(details):
-        ev_type_raw = (ev.get("type") or "").lower()
-        minute = ev.get("timeStr") or ev.get("time") or ""
-        minute = str(minute).replace("'", "").strip()
-        is_home = bool(ev.get("isHome"))
-        team = home if is_home else away
-        opponent = away if is_home else home
-
-        if "goal" in ev_type_raw and "own" not in ev_type_raw:
-            scorer = (ev.get("player") or {}).get("name") or ev.get("nameStr") or ""
-            hit = player_lookup.get(normalize_name(scorer))
-            if hit:
+ 
+ 
+def _league_name(match: dict) -> str:
+    comp = match.get("competition") or {}
+    return comp.get("name") or "Ukendt liga"
+ 
+ 
+def extract_events(match: dict, player_lookup: dict[str, dict]) -> list[dict]:
+    """Find mål, assists og røde kort med dansk spiller."""
+    events_out: list[dict] = []
+    if not match:
+        return events_out
+ 
+    match_id = match.get("id", "?")
+    home_name, away_name, home_id, away_id = _team_names(match)
+    league_name = _league_name(match)
+ 
+    # Mål
+    goals = match.get("goals", []) or []
+    for goal in goals:
+        minute = goal.get("minute", "")
+        injury = goal.get("injuryTime")
+        if injury:
+            minute = f"{minute}+{injury}"
+        gtype = (goal.get("type") or "").upper()  # REGULAR, OWN, PENALTY
+        team_obj = goal.get("team") or {}
+        team_id = team_obj.get("id")
+        team = home_name if team_id == home_id else away_name
+        opponent = away_name if team_id == home_id else home_name
+        # Score lige efter målet
+        sc = goal.get("score") or {}
+        h = sc.get("home")
+        a = sc.get("away")
+        score = f"{h}-{a}" if h is not None and a is not None else _score_str(match)
+ 
+        scorer = (goal.get("scorer") or {}).get("name") or ""
+        scorer_norm = normalize_name(scorer)
+        hit_scorer = player_lookup.get(scorer_norm)
+ 
+        # Mål — kun hvis ikke selvmål (eller hvis selvmål skal regnes som assist for modstander)
+        if hit_scorer and gtype != "OWN":
+            events_out.append({
+                "event_id": f"FD-{match_id}-goal-{scorer_norm}-{minute}",
+                "type": "goal",
+                "player": hit_scorer["name"],
+                "minute": str(minute),
+                "team": team,
+                "opponent": opponent,
+                "score": score,
+                "league": league_name,
+                "match_id": match_id,
+                "source": "football-data",
+            })
+ 
+        # Assist (ikke ved selvmål)
+        if gtype != "OWN":
+            assist = (goal.get("assist") or {})
+            assister = assist.get("name") if isinstance(assist, dict) else ""
+            assister_norm = normalize_name(assister)
+            hit_assister = player_lookup.get(assister_norm)
+            if hit_assister:
                 events_out.append({
-                    "event_id": f"{match_id}-goal-{normalize_name(scorer)}-{minute}",
-                    "type": "goal",
-                    "player": hit["name"],
-                    "minute": minute,
+                    "event_id": f"FD-{match_id}-assist-{assister_norm}-{minute}",
+                    "type": "assist",
+                    "player": hit_assister["name"],
+                    "minute": str(minute),
                     "team": team,
                     "opponent": opponent,
                     "score": score,
                     "league": league_name,
                     "match_id": match_id,
+                    "source": "football-data",
                 })
-
-            assister_obj = ev.get("assistPlayer") or ev.get("assist") or {}
-            assister = ""
-            if isinstance(assister_obj, dict):
-                assister = assister_obj.get("name") or ""
-            elif isinstance(assister_obj, str):
-                assister = assister_obj
-            if assister:
-                hit_a = player_lookup.get(normalize_name(assister))
-                if hit_a:
-                    events_out.append({
-                        "event_id": f"{match_id}-assist-{normalize_name(assister)}-{minute}",
-                        "type": "assist",
-                        "player": hit_a["name"],
-                        "minute": minute,
-                        "team": team,
-                        "opponent": opponent,
-                        "score": score,
-                        "league": league_name,
-                        "match_id": match_id,
-                    })
-
-        is_red = (
-            "redcard" in ev_type_raw.replace(" ", "").replace("_", "")
-            or (ev_type_raw == "card" and (ev.get("card") or "").lower() == "red")
-        )
-        if is_red:
-            player = (ev.get("player") or {}).get("name") or ev.get("nameStr") or ""
-            hit = player_lookup.get(normalize_name(player))
-            if hit:
-                events_out.append({
-                    "event_id": f"{match_id}-red-{normalize_name(player)}-{minute}",
-                    "type": "red_card",
-                    "player": hit["name"],
-                    "minute": minute,
-                    "team": team,
-                    "opponent": opponent,
-                    "score": score,
-                    "league": league_name,
-                    "match_id": match_id,
-                })
-
+ 
+    # Røde kort (bookings)
+    bookings = match.get("bookings", []) or []
+    for booking in bookings:
+        card = (booking.get("card") or "").upper()
+        if "RED" not in card:
+            continue
+        minute = booking.get("minute", "")
+        player_name = (booking.get("player") or {}).get("name") or ""
+        player_norm = normalize_name(player_name)
+        hit = player_lookup.get(player_norm)
+        if not hit:
+            continue
+        team_obj = booking.get("team") or {}
+        team_id = team_obj.get("id")
+        team = home_name if team_id == home_id else away_name
+        opponent = away_name if team_id == home_id else home_name
+        events_out.append({
+            "event_id": f"FD-{match_id}-red-{player_norm}-{minute}",
+            "type": "red_card",
+            "player": hit["name"],
+            "minute": str(minute),
+            "team": team,
+            "opponent": opponent,
+            "score": _score_str(match),
+            "league": league_name,
+            "match_id": match_id,
+            "source": "football-data",
+        })
+ 
     return events_out
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Post-formatering
 # ---------------------------------------------------------------------------
-
+ 
 def format_post(event: dict) -> str | None:
     et = event["type"]
     player = event["player"]
@@ -345,9 +319,9 @@ def format_post(event: dict) -> str | None:
     opponent = event["opponent"] or "?"
     score = event["score"]
     league = event["league"]
-
+ 
     minute_prefix = f"{minute}' · " if minute else ""
-
+ 
     if et == "goal":
         headline = f"{minute_prefix}⚽️ MÅL! {player} scorer for {team} mod {opponent}"
     elif et == "assist":
@@ -356,22 +330,22 @@ def format_post(event: dict) -> str | None:
         headline = f"{minute_prefix}🟥 RØDT KORT til {player} — {team} mod {opponent}"
     else:
         return None
-
+ 
     lines = [headline]
     if score:
         lines.append(f"Stilling: {score}")
     lines.append(f"🏆 {league}")
-
+ 
     text = "\n".join(lines)
     if len(text) > 300:
         text = text[:297] + "…"
     return text
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Bluesky
 # ---------------------------------------------------------------------------
-
+ 
 def bluesky_login() -> Client | None:
     try:
         client = Client()
@@ -380,8 +354,8 @@ def bluesky_login() -> Client | None:
     except Exception as e:
         log(f"Kunne ikke logge ind på Bluesky: {e}")
         return None
-
-
+ 
+ 
 def post_to_bluesky(client: Client, text: str) -> bool:
     try:
         client.send_post(text=text)
@@ -389,70 +363,73 @@ def post_to_bluesky(client: Client, text: str) -> bool:
     except Exception as e:
         log(f"Post fejlede: {e}")
         return False
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-
+ 
 def main() -> int:
     if not BLUESKY_HANDLE or not BLUESKY_PASSWORD:
-        log("FEJL: BLUESKY_HANDLE og BLUESKY_PASSWORD skal være sat som env-variabler.")
+        log("FEJL: BLUESKY_HANDLE og BLUESKY_PASSWORD skal være sat.")
         return 1
-
-    log("Starter danskerdong-bot-kørsel.")
-
+    if not FD_API_KEY:
+        log("FEJL: FOOTBALL_DATA_API_KEY skal være sat.")
+        return 1
+ 
+    log("Starter DanskerDong live-bot (Football-Data.org).")
+ 
     try:
         players, player_lookup = load_players()
     except Exception as e:
         log(f"Kunne ikke læse {PLAYERS_FILE.name}: {e}")
         return 1
-
+ 
     state = load_state()
     processed: set[str] = set(state.get("processed_events", []))
     bootstrapped = state.get("bootstrapped", False)
-
-    log(f"Spillere i database: {len(players)} · "
+    log(f"Aktive spillere: {sum(1 for p in players if p.get('active', True))} · "
         f"events i state: {len(processed)} · bootstrapped: {bootstrapped}")
-
-    matches = fetch_todays_matches()
-    log(f"Fandt {len(matches)} live/afsluttede kampe i dag uden for DK.")
+ 
+    matches = fetch_recent_matches()
+    log(f"Fandt {len(matches)} relevante kampe i Football-Data.")
     if not matches:
         save_state(state)
         return 0
-
+ 
     new_events: list[dict] = []
-
     for m in matches:
-        details = fetch_match_details(m["id"])
-        if not details:
-            continue
-        events = extract_events(details, player_lookup)
+        # Kald detail-endpoint kun hvis matches-listen ikke har goals/bookings
+        # (de fleste tilfælde har det allerede inkluderet)
+        if not m.get("goals") and not m.get("bookings"):
+            details = fetch_match_details(m["id"])
+            if details:
+                m = details
+            time.sleep(FD_COOLDOWN_SECONDS)
+        events = extract_events(m, player_lookup)
         for ev in events:
             if ev["event_id"] not in processed:
                 new_events.append(ev)
-        time.sleep(FOTMOB_COOLDOWN_SECONDS)
-
+ 
     log(f"Nye events med danskere: {len(new_events)}")
-
+ 
     if not bootstrapped:
-        log("Bootstrap-kørsel: markerer eksisterende events som processeret "
-            "uden at poste. Fremtidige kørsler vil poste nye events.")
+        log("Bootstrap-kørsel: markerer eksisterende events som processeret uden at poste.")
         for ev in new_events:
             processed.add(ev["event_id"])
         state["bootstrapped"] = True
         state["processed_events"] = list(processed)
         save_state(state)
         return 0
-
+ 
     if not new_events:
         save_state(state)
         return 0
-
+ 
     client = bluesky_login()
     if client is None:
         return 1
-
+ 
     posted = 0
     for ev in new_events:
         text = format_post(ev)
@@ -463,15 +440,14 @@ def main() -> int:
             processed.add(ev["event_id"])
             posted += 1
             time.sleep(POST_COOLDOWN_SECONDS)
-
+ 
     log(f"Postede {posted}/{len(new_events)} events.")
-
     state["processed_events"] = list(processed)
     save_state(state)
     log("Færdig.")
     return 0
-
-
+ 
+ 
 if __name__ == "__main__":
     try:
         sys.exit(main())
