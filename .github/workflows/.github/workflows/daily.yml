@@ -1,0 +1,44 @@
+name: DanskerDong daily catchup
+ 
+on:
+  schedule:
+    # Kør 04:00 UTC = 06:00 sommertid / 05:00 vintertid (DK)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+ 
+permissions:
+  contents: write
+ 
+jobs:
+  run-catchup:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: danskerdong-state
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+ 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+ 
+      - name: Run daily catchup
+        run: python daily_catchup.py
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+ 
+      - name: Commit state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash
+          git add state.json
+          git diff --cached --quiet || git commit -m "Update state from daily catchup [skip ci]"
+          git push || true
