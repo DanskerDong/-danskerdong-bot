@@ -1,8 +1,5 @@
 {
-  "processed_events": [
-    "5071148-goal-marcus ingvartsen-7",
-    "5071148-goal-marcus ingvartsen-71"
-  ],
-  "bootstrapped": true,
-  "last_run": "2026-05-05T19:25:41.334221+00:00"
+  "processed_events": [],
+  "bootstrapped": false,
+  "last_run": null
 }
