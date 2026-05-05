@@ -1,5 +1,10 @@
 {
   "processed_events": [],
   "bootstrapped": true,
+<<<<<<< Updated upstream
   "last_run": "2026-05-05T19:51:18.235325+00:00"
+=======
+  "last_run": "2026-05-05T19:46:21.059605+00:00",
+  "last_run_daily": "2026-05-05T19:51:39.496457+00:00"
+>>>>>>> Stashed changes
 }
