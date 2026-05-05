@@ -70,7 +70,6 @@ def af_get(path: str, params: dict | None = None) -> dict | None:
         r = requests.get(url, headers=AF_HEADERS, params=params, timeout=20)
         r.raise_for_status()
         data = r.json()
-        # API-Football returnerer ofte 'errors' som dict eller liste med daglige limits etc.
         errs = data.get("errors")
         if errs:
             if isinstance(errs, dict) and errs:
@@ -161,9 +160,7 @@ def fetch_player_team(player_id: int, season: int) -> dict | None:
 
 
 def search_player(name: str, season: int) -> tuple[dict | None, int]:
-    """
-    Returnerer (entry, calls_used).
-    """
+    """Returnerer (entry, calls_used)."""
     last = name.split()[-1] if name else name
     pid = find_player_id(name, last)
     calls = 1
@@ -282,54 +279,6 @@ def main() -> int:
                 new_entry["status"] = "inactive"
                 new_entry["marked_inactive"] = today_iso
                 log(f"  → markeres som inaktiv ({miss_count} misser)")
-            else:
-                new_entry["status"] = "missing"
-            cache[name] = new_entry
-            not_found += 1
-            continue
-
-        team_info = extract_team_info(entry)
-        if team_info is None:
-            miss_count += 1
-            cache[name] = {
-                "team_id": None,
-                "team_name": None,
-                "league_id": None,
-                "league_name": None,
-                "status": "missing",
-                "miss_count": miss_count,
-                "last_attempt": today_iso,
-            }
-            not_found += 1
-            log(f"  fundet, men ingen aktuelle statistikker (miss_count={miss_count})")
-            continue
-
-        cache[name] = {
-            **team_info,
-            "status": "active",
-            "miss_count": 0,
-            "last_found": today_iso,
-            "last_attempt": today_iso,
-        }
-        log(f"  → {team_info['team_name']} ({team_info['league_name']}, "
-            f"{team_info['country']})")
-        found += 1
-
-    save_cache(cache)
-    log(f"Player lookup: {attempted} attempted, {found} found, {not_found} not found, "
-        f"{skipped_inactive} skipped (inactive). Total API-kald: {total_calls}.")
-    log("Cache written.")
-    return 0
-
-
-if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except Exception:
-        log("Uventet fejl:")
-        traceback.print_exc()
-        sys.exit(1)
-aktiv ({miss_count} misser)")
             else:
                 new_entry["status"] = "missing"
             cache[name] = new_entry
